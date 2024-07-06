@@ -1,5 +1,0 @@
-# ninja log v5
-19	504	7419869506254622	CMakeFiles/reflect.dir/include/reflect.cpp.obj	f98565ec56c96be2
-505	563	7419869506831515	reflect.lib	b74aaf4bd2aa44b8
-23	1434	7419869515553712	CMakeFiles/reflect_example.dir/src/main.cpp.obj	75bb4176e35572e
-1434	1617	7419869516853184	reflect_example.exe	f80c1b27250b0036
