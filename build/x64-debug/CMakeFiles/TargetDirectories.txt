@@ -1,0 +1,4 @@
+D:/code/github/reflect/build/x64-debug/CMakeFiles/reflect.dir
+D:/code/github/reflect/build/x64-debug/CMakeFiles/reflect_example.dir
+D:/code/github/reflect/build/x64-debug/CMakeFiles/edit_cache.dir
+D:/code/github/reflect/build/x64-debug/CMakeFiles/rebuild_cache.dir
