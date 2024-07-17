@@ -2,6 +2,9 @@
 
 #include "object.h"
 
+// todo:
+// support the type with the namespace prefix
+
 #define REGISTER_CLASS(class_name, ...)																																														\
 			static std::vector<std::string> APPLY(CONCATENATE_2, class_name##_##infos, CONCATENATE(__VA_ARGS__));																												\
 			static int APPLY(CONCATENATE_2, class_name##_##info, CONCATENATE(__VA_ARGS__)) = Amazing::ObjectFactory::generate_type_info<##__VA_ARGS__>(APPLY(CONCATENATE_2, class_name##_##infos, CONCATENATE(__VA_ARGS__)));	\
