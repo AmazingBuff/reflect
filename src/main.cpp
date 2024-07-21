@@ -34,9 +34,9 @@ public:
 private:
 };
 
-void stt(std::string)
+void stt(std::string v)
 {
-    std::cout << "Hello, World!" << std::endl;
+    std::cout << v << std::endl;
 }
 
 void ast(std::string v)
@@ -110,11 +110,12 @@ int main()
 
     Amazing::Reflection::type_element<2, Amazing::Reflection::type_list, int, char, double, std::string>::list rrr;
 
-    auto str = Amazing::Reflection::get_value<3>(list);
+    //auto str = Amazing::Reflection::get_value<3>(list);
 
+    //auto v = Amazing::Reflection::get_value<3>("1", 1, 2, 5.f);
 
     Amazing::Reflection::reverse_type_t<3, int, char, double, std::string>;
-    Amazing::Reflection::all_of(&dda, "ii", "dd", "ff");
+    Amazing::Reflection::all_of(&ast, "iid", "d", "ff");
     Amazing::Reflection::tail_type_t<int>;
     Amazing::Reflection::overturn_types_t<int, char, int, double, float, std::string> ffff;
 

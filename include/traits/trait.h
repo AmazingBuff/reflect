@@ -18,8 +18,6 @@ namespace Amazing
 		template<typename T>
 		concept not_function_pointer = !is_function_pointer<T>;
 
-		template<typename T>
-		static constexpr bool is_function_pointer_v = is_function_pointer<T>;
 		
 		template<size_t Idx, template <typename...> typename List, typename... Args>
 		struct type_element;
@@ -41,6 +39,9 @@ namespace Amazing
 		template<size_t Idx, template <typename...> typename List, typename... Args>
 		using type_element_t = typename type_element<Idx, List, Args...>::type;
 
+
+		struct null_type {};
+
 		template<typename... Args>
 		struct type_list;
 
@@ -59,13 +60,14 @@ namespace Amazing
 			template<size_t Idx, typename... Args>
 			friend constexpr const type_element_t<Idx, type_list, Args...>&& get_value(const type_list<Args...>&& list);
 
-			type m_data;
+			type m_data = type();
 		};
 
 		template<>
-		struct type_list<> {};
-
-
+		struct type_list<> 
+		{
+			null_type m_data;
+		};
 
 		template<size_t Idx, typename... Args>
 		constexpr const type_element_t<Idx, type_list, Args...>& get_value(const type_list<Args...>& list)

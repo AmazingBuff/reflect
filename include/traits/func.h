@@ -212,6 +212,27 @@ namespace Amazing
 				using remain = type_list<>;
 			};
 
+			template<size_t Idx, typename F, typename List>
+			constexpr typename function_traits<F>::return_type single_of(F&& f, List&& list)
+			{
+				return invoke(std::forward<F>(f), get_value<Idx>(list));
+			}
+
+			template<typename F, typename List, size_t... Idx>
+				requires std::is_same_v<typename function_traits<F>::return_type, void>
+			constexpr void all_of(F&& f, List&& list, std::index_sequence<Idx...>)
+			{
+				(single_of<Idx>(std::forward<F>(f), std::forward<List>(list)), ...);
+			}
+
+			template<typename F, typename List, size_t... Idx>
+				requires(!std::is_same_v<typename function_traits<F>::return_type, void>)
+			constexpr std::array<typename function_traits<F>::return_type, count_types<List>::value> 
+				all_of(F&& f, List&& list, std::index_sequence<Idx...>)
+			{
+				return std::array<typename function_traits<F>::return_type, count_types<List>::value>{ single_of<Idx>(std::forward<F>(f), std::forward<List>(list))...};
+			}
+
 		}
 
 		template<typename From, typename To>
@@ -236,22 +257,34 @@ namespace Amazing
 		static constexpr size_t count_types_v = Internal::count_types<Args...>::value;
 
 
-		template<typename F, typename... Args>
-			requires is_function<std::remove_pointer_t<F>>
-		constexpr std::array<typename function_traits<F>::return_type, count_types_v<Args...>> all_of(F&& f, Args&&... args)
-		{
-			std::array<typename function_traits<F>::return_type, count_types_v<Args...>> ret;
-			(f(args), ...);
-			return ret;
-		}
-
 		template<is_function_pointer F, typename Arg, typename... Args>
 		typename function_traits<F>::return_type invoke(F&& f, Arg&& arg, Args&&... args)
 		{
 			if constexpr (function_traits<F>::is_member_function)
-				return (static_cast<Arg&&>(arg).*static_cast<F&&>(f))(static_cast<Args&&>(args)...);
+				return (static_cast<Arg&&>(arg).*static_cast<F&&>(f))(std::forward<Args>(args)...);
 			else
-				return static_cast<F&&>(f)(static_cast<Arg&&>(arg), static_cast<Args&&>(args)...);
+				return static_cast<F&&>(f)(std::forward<Arg>(arg), std::forward<Args>(args)...);
+		}
+
+		template<size_t Idx, typename F, typename... Args>
+			requires is_function<std::remove_pointer_t<F>>
+		constexpr typename function_traits<F>::return_type single_of(F&& f, Args&&... args)
+		{
+			return Internal::single_of<Idx, F, type_list<Args...>>(std::forward<F>(f), type_list<Args...>(args...));
+		}
+
+		template<typename F, typename... Args>
+			requires (is_function<std::remove_pointer_t<F>> && std::is_same_v<typename function_traits<F>::return_type, void>)
+		constexpr void all_of(F&& f, Args&&... args)
+		{
+			Internal::all_of(std::forward<F>(f), type_list<Args...>(args...), std::make_index_sequence<count_types_v<Args...>>{});
+		}
+
+		template<typename F, typename... Args>
+			requires (is_function<std::remove_pointer_t<F>> && !std::is_same_v<typename function_traits<F>::return_type, void>)
+		constexpr std::array<typename function_traits<F>::return_type, count_types_v<Args...>> all_of(F&& f, Args&&... args)
+		{
+			return std::move(Internal::all_of(std::forward<F>(f), type_list<Args...>(args...), std::make_index_sequence<count_types_v<Args...>>{}));
 		}
 
 
