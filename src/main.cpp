@@ -9,6 +9,8 @@ class Base
 public:
     explicit Base(size_t n) : val(n) {}
 
+    explicit Base(const Base& b) : val(b.val) {}
+
     void con(std::string s) const 
     {
         std::cout << s << std::endl;
@@ -50,7 +52,17 @@ int dda(std::string v)
     return v.size();
 }
 
-using namespace std;
+void print(std::string f, double v)
+{
+    std::cout << f << ": " << v << std::endl;
+}
+
+template<typename T>
+void printT(T&& t)
+{
+	std::cout << t << std::endl;
+}
+
 
 //REGISTER_CLASS(Base, size_t);
 //REGISTER_CLASS(Base, string);
@@ -59,8 +71,12 @@ int main()
 {
     using l1 = Amazing::Reflection::type_list<int, double, char>;
     using l2 = Amazing::Reflection::type_list<int, std::string, float>;
+    //static constexpr auto i = Amazing::Reflection::is_convertible_v<l1, l2>;
 
-    static constexpr auto i = Amazing::Reflection::is_convertible_v<l1, l2>;
+    std::tuple<int, char, double> t1(1, 'c', 1.0);
+    std::tuple<int, char, double> t2(t1);
+
+    std::tuple<std::tuple<int, char, double>, int, double> ttt(t1, 1, 2);
 
     auto ii = std::is_constructible_v<Base, std::string>;
 
@@ -103,6 +119,9 @@ int main()
     //std::is_member_function_pointer_v<decltype(Base::con)>;
 
     Amazing::Reflection::type_list<int, char, double, std::string> list(1,1,1,"s");
+    Amazing::Reflection::type_list<int, char, double, std::string> list2(list);
+
+    Amazing::Reflection::type_list<Amazing::Reflection::type_list<int, char, double, std::string>, int, double> list_l(list, 1, 2.0);
 
     //static_cast<Amazing::Reflection::type_list<char, double, std::string>>(list);
 
@@ -114,13 +133,40 @@ int main()
 
     //auto v = Amazing::Reflection::get_value<3>("1", 1, 2, 5.f);
 
+    Amazing::Reflection::get_type_t<1, double, int>;
+
+    std::is_invocable_v<decltype(print), std::string, double>;
+
     Amazing::Reflection::reverse_type_t<3, int, char, double, std::string>;
-    Amazing::Reflection::all_of(&ast, "iid", "d", "ff");
+    bool astf = Amazing::Reflection::is_function_pointer<decltype(iii)>;
+
+
+    //Amazing::Reflection::apply(&::print, Amazing::Reflection::type_list<std::string, double>("s", 10.0));
+
+    Amazing::Reflection::type_list<Base, int, int, std::string> tList(base, 1, 5, "Hello");
+
+    Amazing::Reflection::function_traits<decltype(iii)>::return_type;
+
+    //std::invoke(iii, base, "Hello, World!");
+
+    printT(iii);
+
+    //Amazing::Reflection::invoke(iii, base, 'c');
+    Amazing::Reflection::invoke(&::print, "Hello, World!", 2);
+
+    //Amazing::Reflection::apply(iii, base, Amazing::Reflection::type_list<std::string>("ss"));
+
+    Amazing::Reflection::all_of(iii, base, "tu", Amazing::Reflection::type_list<std::string>("ss"), "hhh");
     Amazing::Reflection::tail_type_t<int>;
     Amazing::Reflection::overturn_types_t<int, char, int, double, float, std::string> ffff;
 
+    std::tuple<std::string, double> tup("s", 1);
+ 
+
+    Amazing::Reflection::type_list<int, double> fDff(1, 2);
 
 
+    Base f(base);
 
     auto b = base.val;
 
@@ -129,8 +175,8 @@ int main()
     std::invoke(iii, base, "Hello, World!");
     std::invoke(&stt, "Hello, World!");
 
-    Amazing::Reflection::invoke(&stt, "Hello, World!");
-    Amazing::Reflection::invoke(&Base::con, base, "Hello, Word!");
+    /*Amazing::Reflection::invoke(&stt, "Hello, World!");
+    Amazing::Reflection::invoke(&Base::con, base, "Hello, Word!");*/
 
     //Amazing::Reflection::function_traits<decltype(&Base::con)>::class_type bsb(2);
 
