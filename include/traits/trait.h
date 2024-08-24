@@ -4,7 +4,7 @@
 
 namespace Amazing
 {
-	namespace Reflection
+	namespace Trait
 	{
 		template<typename T>
 		concept is_function = std::is_function_v<T>;
@@ -19,13 +19,25 @@ namespace Amazing
 		concept not_function_pointer = !is_function_pointer<T>;
 
 
+		template<typename T>
+		struct is_template : std::false_type {};
+
+		template<template <typename...> typename Tp, typename... Args>
+		struct is_template<Tp<Args...>> : std::true_type {};
+
+		template<typename T>
+		static constexpr bool is_template_v = is_template<T>::value;
+
 		template<typename T, typename U>
 		struct is_same_template : std::false_type {};
 
 		template<template <typename...> typename Tp, typename... ArgsT, typename... ArgsU>
 		struct is_same_template<Tp<ArgsT...>, Tp<ArgsU...>> : std::true_type {};
 
-		
+		template<typename T, typename U>
+		static constexpr bool is_same_template_v = is_same_template<T, U>::value;
+
+
 		template<size_t Idx, template <typename...> typename List, typename... Args>
 		struct type_element;
 
@@ -274,5 +286,20 @@ namespace Amazing
 		template<typename T>
 		using remove_qualifier_t = remove_qualifier<T>::type;
 
+
+		template<typename T>
+		struct template_traits;
+
+		template<template <typename...> typename Tp, typename... Args>
+		struct template_traits<Tp<Args...>>
+		{
+			using type = type_list<Args...>;
+			
+			template<typename... T>
+			using apply = Tp<T...>;
+		};
+
+		template<typename T, typename... Args>
+		using apply_template = typename template_traits<T>::template apply<Args...>;
 	}
 }

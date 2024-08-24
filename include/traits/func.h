@@ -5,7 +5,7 @@
 
 namespace Amazing
 {
-	namespace Reflection
+	namespace Trait
 	{
 		template<typename F, typename Arg, typename... Args>
 		typename function_traits<std::decay_t<F>>::return_type invoke(F&& f, Arg&& arg, Args&&... args)
@@ -33,6 +33,18 @@ namespace Amazing
 			struct is_invocable<F, type_list<Args...>>
 			{
 				static constexpr bool value = std::is_invocable_v<F, Args...> || std::is_nothrow_invocable_v<F, Args...>;
+			};
+
+			template<typename Ret, typename F, typename... Args>
+			struct is_invocable_r
+			{
+				static constexpr bool value = std::is_invocable_r_v<Ret, F, Args...> || std::is_nothrow_invocable_r_v<Ret, F, Args...>;
+			};
+
+			template<typename Ret, typename F, typename... Args>
+			struct is_invocable_r<Ret, F, type_list<Args...>>
+			{
+				static constexpr bool value = std::is_invocable_r_v<Ret, F, Args...> || std::is_nothrow_invocable_r_v<Ret, F, Args...>;
 			};
 
 			template<typename T, typename U>
@@ -247,14 +259,14 @@ namespace Amazing
 				requires(!function_traits<std::decay_t<F>>::is_member_function)
 			constexpr typename function_traits<std::decay_t<F>>::return_type apply(F&& f, List&& list, std::index_sequence<Idx...>)
 			{
-				return Reflection::invoke(std::forward<F>(f), get_value<Idx>(std::forward<List>(list))...);
+				return Trait::invoke(std::forward<F>(f), get_value<Idx>(std::forward<List>(list))...);
 			}
 
 			template<typename F, typename Class, typename List, size_t... Idx>
 				requires(function_traits<std::decay_t<F>>::is_member_function)
 			constexpr typename function_traits<std::decay_t<F>>::return_type apply(F&& f, Class&& c, List&& list, std::index_sequence<Idx...>)
 			{
-				return Reflection::invoke(std::forward<F>(f), std::forward<Class>(c), get_value<Idx>(std::forward<List>(list))...);
+				return Trait::invoke(std::forward<F>(f), std::forward<Class>(c), get_value<Idx>(std::forward<List>(list))...);
 			}
 
 			template<size_t Idx, typename F, typename List>
@@ -262,19 +274,19 @@ namespace Amazing
 			{
 				if constexpr (function_traits<std::decay_t<F>>::is_member_function)
 				{
-					if constexpr (is_same_template<typename function_traits<std::decay_t<F>>::argument_type,
-									std::decay_t<decltype(get_value<Idx + 1>(std::forward<List>(list)))>>::value)
+					if constexpr (is_same_template_v<typename function_traits<std::decay_t<F>>::argument_type,
+									std::decay_t<decltype(get_value<Idx + 1>(std::forward<List>(list)))>>)
 						return apply(std::forward<F>(f), get_value<0>(std::forward<List>(list)), get_value<Idx + 1>(std::forward<List>(list)));
 					else
-						return Reflection::invoke(std::forward<F>(f), get_value<0>(std::forward<List>(list)), get_value<Idx + 1>(std::forward<List>(list)));
+						return Trait::invoke(std::forward<F>(f), get_value<0>(std::forward<List>(list)), get_value<Idx + 1>(std::forward<List>(list)));
 				}
 				else
 				{
-					if constexpr (is_same_template<typename function_traits<std::decay_t<F>>::argument_type,
-						std::decay_t<decltype(get_value<Idx>(std::forward<List>(list)))>>::value)
+					if constexpr (is_same_template_v<typename function_traits<std::decay_t<F>>::argument_type,
+						std::decay_t<decltype(get_value<Idx>(std::forward<List>(list)))>>)
 						return apply(std::forward<F>(f), get_value<Idx>(std::forward<List>(list)));
 					else
-						return Reflection::invoke(std::forward<F>(f), get_value<Idx>(std::forward<List>(list)));
+						return Trait::invoke(std::forward<F>(f), get_value<Idx>(std::forward<List>(list)));
 				}
 			}
 
@@ -297,6 +309,9 @@ namespace Amazing
 
 		template<typename F, typename... Args>
 		static constexpr bool is_invocable_v = Internal::is_invocable<F, Args...>::value;
+
+		template<typename Ret, typename F, typename... Args>
+		static constexpr bool is_invocable_r_v = Internal::is_invocable_r<Ret, F, Args...>::value;
 
 		template<typename... Args>
 		using head_type_t = typename Internal::head_type<Args...>::type;
