@@ -9,6 +9,8 @@ project(
 file(GLOB_RECURSE HEADER_FILES include/*.h)
 file(GLOB_RECURSE SOURCE_FILES include/*.cpp)
 
+find_package(Clang)
+
 add_executable(
 	${PROJECT_NAME}
 	${HEADER_FILES}
@@ -34,4 +36,13 @@ target_include_directories(
 	PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>
+	PRIVATE
+	${CLANG_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+	${PROJECT_NAME}
+	PUBLIC
+	clangFrontend
+	clangTooling
 )

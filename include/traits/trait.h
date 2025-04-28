@@ -72,19 +72,19 @@ namespace Amazing
 
 			type_list() = default;
 
-			type_list(First&& first, Args&&... args)
+			explicit type_list(First&& first, Args&&... args)
 				requires(!std::is_class_v<First>)
-				: m_data(std::forward<First>(first)), type_list<Args...>(std::forward<Args>(args)...) {}
+				: type_list<Args...>(std::forward<Args>(args)...), m_data(std::forward<First>(first)) {}
 
-			type_list(const First& first, Args&&... args) 
+			explicit type_list(const First& first, Args&&... args)
 				requires(std::is_class_v<First>)
-				: m_data(first), type_list<Args...>(std::forward<Args>(args)...) {}
+				: type_list<Args...>(std::forward<Args>(args)...), m_data(first) {}
 
 			type_list(const type_list& other)
-				: m_data(other.m_data), type_list<Args...>(other.get_rest()) {}
+				: type_list<Args...>(other.get_rest()), m_data(other.m_data) {}
 
 			type_list(type_list&& other) noexcept
-				: m_data(std::move(other.m_data)), type_list<Args...>(std::move(other.get_rest())) {}
+				: type_list<Args...>(std::move(other.get_rest())), m_data(std::move(other.m_data)) {}
 
 			constexpr type_list& operator=(const type_list& other)
 			{
@@ -100,25 +100,25 @@ namespace Amazing
 				return *this;
 			}
 
-			template<size_t Idx, typename... Args>
-			friend constexpr const type_element_t<Idx, type_list, Args...>& get_value(const type_list<Args...>& list);
+			template<size_t Idx, typename... UArgs>
+			friend constexpr const type_element_t<Idx, type_list, UArgs...>& get_value(const type_list<UArgs...>& list);
 
-			template<size_t Idx, typename... Args>
-			friend constexpr const type_element_t<Idx, type_list, Args...>&& get_value(const type_list<Args...>&& list);
+			template<size_t Idx, typename... UArgs>
+			friend constexpr const type_element_t<Idx, type_list, UArgs...>&& get_value(const type_list<UArgs...>&& list);
 
-			template<size_t Idx, typename... Args>
-			friend constexpr type_element_t<Idx, type_list, Args...>& get_value(type_list<Args...>& list);
+			template<size_t Idx, typename... UArgs>
+			friend constexpr type_element_t<Idx, type_list, UArgs...>& get_value(type_list<UArgs...>& list);
 
-			template<size_t Idx, typename... Args>
-			friend constexpr type_element_t<Idx, type_list, Args...>&& get_value(type_list<Args...>&& list);
+			template<size_t Idx, typename... UArgs>
+			friend constexpr type_element_t<Idx, type_list, UArgs...>&& get_value(type_list<UArgs...>&& list);
 
 
-			inline constexpr type_list<Args...>& get_rest()
+			constexpr type_list<Args...>& get_rest()
 			{
 				return *this;
 			}
 
-			inline constexpr const type_list<Args...>& get_rest() const
+			constexpr const type_list<Args...>& get_rest() const
 			{
 				return *this;
 			}
@@ -131,7 +131,7 @@ namespace Amazing
 		{
 			null_type m_data;
 
-			constexpr const type_list& operator=(const type_list& other)
+			constexpr const type_list& operator=(const type_list& other) const
 			{
 				return *this;
 			}
@@ -280,11 +280,11 @@ namespace Amazing
 		template<typename T>
 		struct remove_qualifier
 		{
-			using type = variable_traits<T>::type;
+			using type = typename variable_traits<T>::type;
 		};
 
 		template<typename T>
-		using remove_qualifier_t = remove_qualifier<T>::type;
+		using remove_qualifier_t = typename remove_qualifier<T>::type;
 
 
 		template<typename T>

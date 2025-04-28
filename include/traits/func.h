@@ -150,7 +150,7 @@ namespace Amazing
 			template<size_t N, typename... Args>
 			struct reverse_type
 			{
-				using type = reverse_type<N - 1, typename concat_types<typename head_type<Args...>::remain, typename head_type<Args...>::type>::type>::type;
+				using type = typename reverse_type<N - 1, typename concat_types<typename head_type<Args...>::remain, typename head_type<Args...>::type>::type>::type;
 			};
 
 			template<typename... Args>
@@ -162,7 +162,7 @@ namespace Amazing
 			template<size_t N, typename... Args>
 			struct reverse_type<N, type_list<Args...>>
 			{
-				using type = reverse_type<N - 1, typename concat_types<typename head_type<Args...>::remain, typename head_type<Args...>::type>::type>::type;
+				using type = typename reverse_type<N - 1, typename concat_types<typename head_type<Args...>::remain, typename head_type<Args...>::type>::type>::type;
 			};
 
 #ifdef _HAS_CXX11
