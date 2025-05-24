@@ -10,6 +10,7 @@ file(GLOB_RECURSE HEADER_FILES include/*.h)
 file(GLOB_RECURSE SOURCE_FILES include/*.cpp)
 
 find_package(Clang)
+add_subdirectory(ext/amazing_std)
 
 add_executable(
 	${PROJECT_NAME}
@@ -45,4 +46,11 @@ target_link_libraries(
 	PUBLIC
 	clangFrontend
 	clangTooling
+	amazing_std
+)
+
+target_compile_definitions(
+	${PROJECT_NAME}
+	PUBLIC
+	RES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/res/"
 )
