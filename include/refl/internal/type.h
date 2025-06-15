@@ -2,72 +2,56 @@
 
 #include "ref.h"
 
-AMAZING_NAMESPACE_BEGIN
-
-struct Parameter
+namespace Amazing::Reflect
 {
-    String name;
-    String type;
-};
-
-
-class IType
-{
-public:
-    virtual ~IType() = default;
-    NODISCARD virtual String name() const = 0;
-};
-
-class IFunction : public IType
-{
-public:
-    NODISCARD virtual uint32_t parameter_count() const = 0;
-    NODISCARD virtual Parameter return_type() const = 0;
-    NODISCARD virtual Parameter parameter_type(uint32_t index) const = 0;
-
-    template <typename... Args>
-    Any operator()(Args&&... args)
+    struct Parameter
     {
-        const Vector<Any> arguments = { std::forward<Args>(args)... };
-        return invoke(arguments);
-    }
+        const char* name;
+        const char* type;
+    };
 
-    virtual Any invoke(const Vector<Any>& args) = 0;
-};
-
-class IMethod : public IType
-{
-public:
-    NODISCARD virtual uint32_t parameter_count() const = 0;
-    NODISCARD virtual Parameter return_type() const = 0;
-    NODISCARD virtual Parameter parameter_type(uint32_t index) const = 0;
-
-    template <typename... Args>
-    Any operator()(const Ref& ref, Args&&... args)
+    namespace Internal
     {
-        const Vector<Any> arguments = { std::forward<Args>(args)... };
-        return invoke(ref, arguments);
+        constexpr static const char* Null_Type_Name = "NullType";
+
+        class NullType
+        {
+        public:
+            [[nodiscard]] static const char* name() {return Null_Type_Name;}
+        };
+
+        class NullFunction : public NullType
+        {
+        public:
+            [[nodiscard]] static uint32_t parameter_count() {return 0;}
+            [[nodiscard]] static Parameter return_type() {return {Null_Type_Name, Null_Type_Name};}
+            [[nodiscard]] static Parameter parameter_type(uint32_t index) {return {Null_Type_Name, Null_Type_Name};}
+        };
+
+        class NullMethod : public NullType
+        {
+        public:
+            [[nodiscard]] static uint32_t parameter_count() {return 0;}
+            [[nodiscard]] static Parameter return_type() {return {Null_Type_Name, Null_Type_Name};}
+            [[nodiscard]] static Parameter parameter_type(uint32_t index) {return {Null_Type_Name, Null_Type_Name};}
+        };
+
+        class NullClass : public NullType
+        {
+        public:
+            [[nodiscard]] static uint32_t field_count() {return 0;}
+            [[nodiscard]] static Parameter field_type(uint32_t index) {return {Null_Type_Name, Null_Type_Name};}
+            [[nodiscard]] static Ref field(const Ref& obj, uint32_t index) { return obj; }
+
+            [[nodiscard]] static uint32_t static_field_count() {return 0;}
+            [[nodiscard]] static Parameter static_field_type(uint32_t index) {return {Null_Type_Name, Null_Type_Name};}
+            [[nodiscard]] static Ref static_field(const Ref& obj, uint32_t index) { return obj; }
+
+            [[nodiscard]] static uint32_t method_count() {return 0;}
+            [[nodiscard]] static NullMethod* method(uint32_t index) {return nullptr;}
+
+            [[nodiscard]] static uint32_t static_method_count() {return 0;}
+            [[nodiscard]] static NullMethod* static_method(uint32_t index) {return nullptr;}
+        };
     }
-
-    virtual Any invoke(const Ref& ref, const Vector<Any>& args) = 0;
-};
-
-class IClass : public IType
-{
-public:
-    NODISCARD virtual uint32_t field_count() const = 0;
-    NODISCARD virtual Parameter field_type(uint32_t index) const = 0;
-    NODISCARD virtual Ref field(const Ref& obj, uint32_t index) const = 0;
-
-    NODISCARD virtual uint32_t static_field_count() const = 0;
-    NODISCARD virtual Parameter static_field_type(uint32_t index) const = 0;
-    NODISCARD virtual Ref static_field(const Ref& obj, uint32_t index) const = 0;
-
-    NODISCARD virtual uint32_t method_count() const = 0;
-    NODISCARD virtual IMethod* method(uint32_t index) const = 0;
-
-    NODISCARD virtual uint32_t static_method_count() const = 0;
-    NODISCARD virtual IMethod* static_method(uint32_t index) const = 0;
-};
-
-AMAZING_NAMESPACE_END
+}

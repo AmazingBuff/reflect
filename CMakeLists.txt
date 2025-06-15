@@ -6,16 +6,21 @@ project(
 	DESCRIPTION "A simple reflection library for C++"
 )
 
+# Add cmake modules path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(ReflectSupport)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 file(GLOB_RECURSE HEADER_FILES include/*.h)
-file(GLOB_RECURSE SOURCE_FILES include/*.cpp)
+file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 
 find_package(Clang)
-add_subdirectory(ext/amazing_std)
 
 add_executable(
 	${PROJECT_NAME}
 	${HEADER_FILES}
-	src/main.cpp
+	${SOURCE_FILES}
 )
 
 target_compile_features(
@@ -46,11 +51,50 @@ target_link_libraries(
 	PUBLIC
 	clangFrontend
 	clangTooling
-	amazing_std
 )
 
 target_compile_definitions(
 	${PROJECT_NAME}
 	PUBLIC
 	RES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/res/"
+)
+
+add_custom_command(
+	TARGET ${PROJECT_NAME}
+	PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+	${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json ${CMAKE_CURRENT_SOURCE_DIR}/.vscode/compile_commands.json
+)
+
+# Install targets
+install(TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}Targets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+# Install headers
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Install cmake modules
+install(FILES
+    cmake/ReflectSupport.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
+)
+
+# Create and install config file
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    cmake/${PROJECT_NAME}Config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
 )
