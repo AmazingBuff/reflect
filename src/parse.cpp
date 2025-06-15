@@ -1,69 +1,97 @@
-#include <refl/refl.h>
-#include "refl/plugin/refl_action.h"
 #include <clang/Tooling/Tooling.h>
-#include <clang/Tooling/CommonOptionsParser.h>
+#include <clang/Tooling/CompilationDatabase.h>
 #include <filesystem>
-#include <iostream>
 
+#include "refl/plugin/refl_attr.h"
+#include "refl/plugin/refl_action.h"
 
+static clang::ParsedAttrInfoRegistry::Add<Amazing::Reflect::ReflAttrInfo> Reflect("refl", "parse [[refl]] attribute as reflection signal");
 
-int main()
+int main(int Argc, const char* Argv[])
 {
     int argc = 5;
-    const char* argv[] = {"-I", "input.cpp", "input.h", "-o", "output.meta", };
+    const char* argv[] = {
+        "reflect.exe",
+        "-i", "E:/code/VS/reflect/cmake-build-debug/input.cpp",
+        "-O", "E:/code/VS/reflect/meta"
+    };
 
-    llvm::cl::ResetCommandLineParser();
-
-
-    static llvm::cl::OptionCategory Reflect_Category("Reflect Options");
-    static llvm::cl::list<std::string> Input_File(
+    static llvm::cl::OptionCategory reflect_category("Reflect Options");
+    static llvm::cl::list<std::string> input_files(
         "i",
-        llvm::cl::value_desc("input file"),
-        llvm::cl::cat(Reflect_Category));
-    static llvm::cl::opt<std::string> Input_Directory(
+        llvm::cl::value_desc("filename"),
+        llvm::cl::desc("input file"),
+        llvm::cl::cat(reflect_category));
+    static llvm::cl::list<std::string> input_directories(
         "I",
+        llvm::cl::value_desc("directory"),
         llvm::cl::desc("input directory"),
-        llvm::cl::cat(Reflect_Category));
-    static llvm::cl::opt<std::string> Output_File(
+        llvm::cl::cat(reflect_category));
+    static llvm::cl::opt<std::string> output_file(
         "o",
+        llvm::cl::value_desc("filename"),
         llvm::cl::desc("output file"),
-        llvm::cl::cat(Reflect_Category));
-    static llvm::cl::opt<std::string> Output_Directory(
+        llvm::cl::cat(reflect_category));
+    static llvm::cl::opt<std::string> output_directory(
         "O",
+        llvm::cl::Required,
+        llvm::cl::value_desc("directory"),
         llvm::cl::desc("output directory"),
-        llvm::cl::cat(Reflect_Category));
+        llvm::cl::cat(reflect_category));
 
-    llvm::cl::HideUnrelatedOptions(Reflect_Category);
+    llvm::cl::HideUnrelatedOptions(reflect_category);
     llvm::cl::ParseCommandLineOptions(argc, argv, "Tool description\n");
+    llvm::cl::PrintOptionValues();
 
-
-    // clang::Expected<clang::tooling::CommonOptionsParser> expected_parser = clang::tooling::CommonOptionsParser::create(argc, argv, Reflect_Category, llvm::cl::OneOrMore);
-    //
-    // if (!expected_parser) {
-    //     llvm::errs() << expected_parser.takeError();
-    //     return 1;
-    // }
-    // clang::tooling::CommonOptionsParser& parser = expected_parser.get();
-    // const std::vector<std::string>& files = parser.getSourcePathList();
-
-
-
-    //clang::tooling::RefactoringTool Tool(OptionsParser.getCompilations(), Files);
-
-    if (!Input_File.empty())
+    uint32_t file_count = 0;
+    for (const std::string& input_directory : input_directories)
     {
-        //std::cout << Input_File << std::endl;
+        std::filesystem::path dir = input_directory;
+        if (std::filesystem::is_directory(dir))
+        {
+            for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(dir))
+            {
+                if (entry.is_regular_file())
+                    file_count++;
+            }
+        }
     }
 
-    if (!Output_File.empty())
+    for (const std::string& input_file : input_files)
     {
-        std::cout << Output_File << std::endl;
+        if (std::filesystem::is_regular_file(input_file))
+            file_count++;
     }
 
-    std::string ErrorMsg = "cont";
+    std::vector<std::string> files(file_count);
+    uint32_t file_index = 0;
+    for (const std::string& input_directory : input_directories)
+    {
+        std::filesystem::path dir = input_directory;
+        if (std::filesystem::is_directory(dir))
+        {
+            for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(dir))
+            {
+                if (entry.is_regular_file())
+                {
+                    files[file_index] = entry.path().generic_string();
+                    file_index++;
+                }
+            }
+        }
+    }
 
-        //std::unique_ptr<clang::tooling::FixedCompilationDatabase> database =
-        //    clang::tooling::FixedCompilationDatabase::loadFromCommandLine(argc, argv, ErrorMsg);
+    for (const std::string& input_file : input_files)
+    {
+        if (std::filesystem::is_regular_file(input_file))
+        {
+            files[file_index] = input_file;
+            file_index++;
+        }
+    }
 
-        //clang::tooling::ClangTool Tool(*database, {"sourceFiles"});
+
+    std::unique_ptr<clang::tooling::FixedCompilationDatabase> compilations = std::make_unique<clang::tooling::FixedCompilationDatabase>(".", std::vector<std::string>());
+    clang::tooling::ClangTool tool(*compilations, files);
+    return tool.run(std::make_unique<Amazing::Reflect::ReflAttributeFactory>(output_directory).get());
 }

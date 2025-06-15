@@ -35,17 +35,22 @@ namespace Amazing::Reflect
         field_type += R"(default: return {Null_Type_Name, Null_Type_Name}; } })";
         field += R"(default: return obj; } })";
 
-        std::string field_method = std::format(R"([[nodiscard]] static uint32_t field_count() {{ return {}; }}\n{}\n{})", field_count, field_type, field);
+        std::string field_method = std::format(R"([[nodiscard]] static uint32_t field_count() {{ return {}; }} {} {})", field_count, field_type, field);
 
 
         std::string meta_info = std::format(R"(class MetaInfo<{}> {{public: {} }};)", qualified_class_name, field_method);
         return meta_info;
     }
 
+    ReflAttributeAction::ReflAttributeAction(const llvm::StringRef output_directory) : m_output_directory(output_directory) {}
+
     std::unique_ptr<clang::ASTConsumer> ReflAttributeAction::CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile)
     {
-        return std::make_unique<ReflAttributeConsumer>(InFile);
+        return std::make_unique<ReflAttributeConsumer>(InFile, m_output_directory);
     }
+
+    ReflAttributeConsumer::ReflAttributeConsumer(const llvm::StringRef in_file, const llvm::StringRef output_directory)
+        : m_source_file(in_file), m_output_directory(output_directory) {}
 
     void ReflAttributeConsumer::HandleTranslationUnit(clang::ASTContext& Context)
     {
@@ -68,10 +73,16 @@ namespace Amazing::Reflect
         if (!std::filesystem::exists(output_directory))
             std::filesystem::create_directories(output_directory);
 
-        // 写入元数据到文件
         std::ofstream out(output_directory / source);
         if (out)
             out << m_visitor.GetMetaInfo();
+    }
+
+    ReflAttributeFactory::ReflAttributeFactory(llvm::StringRef output_directory) : m_output_directory(output_directory) {}
+
+    std::unique_ptr<clang::FrontendAction> ReflAttributeFactory::create()
+    {
+        return std::make_unique<ReflAttributeAction>(m_output_directory);
     }
 
     bool ReflAttributeVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* RecordDecl)

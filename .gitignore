@@ -367,3 +367,6 @@ build/
 
 # clion cache file
 .idea/
+
+# vscode
+.vscode/

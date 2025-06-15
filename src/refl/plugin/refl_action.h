@@ -7,6 +7,7 @@
 
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/Tooling/Tooling.h>
 
 namespace Amazing::Reflect
 {
@@ -22,21 +23,35 @@ namespace Amazing::Reflect
     class ReflAttributeConsumer final : public clang::ASTConsumer
     {
     public:
-        explicit ReflAttributeConsumer(llvm::StringRef InFile) : m_source_file(InFile) {}
+        ReflAttributeConsumer(llvm::StringRef in_file, llvm::StringRef output_directory);
         void HandleTranslationUnit(clang::ASTContext& Context) override;
     private:
         void WriteMetaInfoToFile() const;
     private:
         ReflAttributeVisitor m_visitor;
         std::string m_source_file;
-        std::string m_output_directory = R"(E:/code/VS/reflect/meta)";
+        std::string m_output_directory;
     };
 
     class ReflAttributeAction final : public clang::ASTFrontendAction
     {
     public:
+        explicit ReflAttributeAction(llvm::StringRef output_directory);
         std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile) override;
+    private:
+        llvm::StringRef m_output_directory;
     };
+
+    class ReflAttributeFactory final : public clang::tooling::FrontendActionFactory
+    {
+    public:
+        explicit ReflAttributeFactory(llvm::StringRef output_directory);
+        std::unique_ptr<clang::FrontendAction> create() override;
+    private:
+        llvm::StringRef m_output_directory;
+    };
+
+
 }
 
 #endif //REFL_ACTION_H
