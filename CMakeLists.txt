@@ -61,7 +61,7 @@ set(REFLECT_OUTPUT_DIR ${CMAKE_BINARY_DIR}/reflect)
 get_property(targets DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY BUILDSYSTEM_TARGETS)
 foreach(target ${targets})
 	get_target_property(target_sources ${target} SOURCES)
-	if("${target_sources}" STREQUAL "target_sources-NOTFOUND" OR "${target_sources}" STREQUAL "${PROJECT_NAME}_exec")
+	if("${target_sources}" STREQUAL "target_sources-NOTFOUND" OR ${target} STREQUAL ${PROJECT_NAME}_exec)
 		continue()
 	endif ()
 
