@@ -10,26 +10,22 @@ static clang::ParsedAttrInfoRegistry::Add<Amazing::Reflect::ReflAttrInfo> Reflec
 
 int main(int argc, const char* argv[])
 {
-    // int argc = 5;
-    // const char* argv[] = {
-    //     "reflect.exe",
-    //     "-i", "E:/code/VS/reflect/cmake-build-debug/input.cpp",
-    //     "-O", "E:/code/VS/reflect/meta"
-    // };
-
     static llvm::cl::OptionCategory reflect_category("Reflect Options");
     static llvm::cl::list<std::string> input_files(
         "i",
+        llvm::cl::ZeroOrMore,
         llvm::cl::value_desc("filename"),
         llvm::cl::desc("input file"),
         llvm::cl::cat(reflect_category));
     static llvm::cl::list<std::string> input_directories(
         "I",
+        llvm::cl::ZeroOrMore,
         llvm::cl::value_desc("directory"),
         llvm::cl::desc("input directory"),
         llvm::cl::cat(reflect_category));
     static llvm::cl::opt<std::string> output_file(
         "o",
+        llvm::cl::Optional,
         llvm::cl::value_desc("filename"),
         llvm::cl::desc("output file"),
         llvm::cl::cat(reflect_category));
@@ -41,7 +37,7 @@ int main(int argc, const char* argv[])
         llvm::cl::cat(reflect_category));
 
     llvm::cl::HideUnrelatedOptions(reflect_category);
-    llvm::cl::ParseCommandLineOptions(argc, argv, "Tool description\n");
+    llvm::cl::ParseCommandLineOptions(argc, argv);
     llvm::cl::PrintOptionValues();
 
     uint32_t file_count = 0;
@@ -98,7 +94,7 @@ int main(int argc, const char* argv[])
     // merge
     std::filesystem::path out_directory = output_directory.getValue();
     std::filesystem::path out_file = out_directory / "refl.meta";
-    if (!files.empty())
+    if (!files.empty() && std::filesystem::exists(out_directory))
     {
         std::ofstream out(out_file, std::ios::app);
         std::vector<std::filesystem::path> file_to_delete(file_count);
