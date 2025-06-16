@@ -1,20 +1,21 @@
 #include <clang/Tooling/Tooling.h>
 #include <clang/Tooling/CompilationDatabase.h>
 #include <filesystem>
+#include <fstream>
 
 #include "refl/plugin/refl_attr.h"
 #include "refl/plugin/refl_action.h"
 
 static clang::ParsedAttrInfoRegistry::Add<Amazing::Reflect::ReflAttrInfo> Reflect("refl", "parse [[refl]] attribute as reflection signal");
 
-int main(int Argc, const char* Argv[])
+int main(int argc, const char* argv[])
 {
-    int argc = 5;
-    const char* argv[] = {
-        "reflect.exe",
-        "-i", "E:/code/VS/reflect/cmake-build-debug/input.cpp",
-        "-O", "E:/code/VS/reflect/meta"
-    };
+    // int argc = 5;
+    // const char* argv[] = {
+    //     "reflect.exe",
+    //     "-i", "E:/code/VS/reflect/cmake-build-debug/input.cpp",
+    //     "-O", "E:/code/VS/reflect/meta"
+    // };
 
     static llvm::cl::OptionCategory reflect_category("Reflect Options");
     static llvm::cl::list<std::string> input_files(
@@ -90,8 +91,43 @@ int main(int Argc, const char* Argv[])
         }
     }
 
-
     std::unique_ptr<clang::tooling::FixedCompilationDatabase> compilations = std::make_unique<clang::tooling::FixedCompilationDatabase>(".", std::vector<std::string>());
     clang::tooling::ClangTool tool(*compilations, files);
-    return tool.run(std::make_unique<Amazing::Reflect::ReflAttributeFactory>(output_directory).get());
+    tool.run(std::make_unique<Amazing::Reflect::ReflAttributeFactory>(output_directory).get());
+
+    // merge
+    std::filesystem::path out_directory = output_directory.getValue();
+    std::filesystem::path out_file = out_directory / "refl.meta";
+    if (!files.empty())
+    {
+        std::ofstream out(out_file, std::ios::app);
+        std::vector<std::filesystem::path> file_to_delete(file_count);
+        uint32_t delete_file_index = 0;
+        for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(out_directory))
+        {
+            if (entry.is_regular_file() && entry.path().extension() == ".meta")
+            {
+                std::ifstream in(entry.path());
+                if (in)
+                {
+                    std::string meta_info((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                    if (!meta_info.empty())
+                        out << meta_info;
+                }
+                in.close();
+
+                file_to_delete[delete_file_index] = entry.path();
+                delete_file_index++;
+            }
+        }
+        out.close();
+
+        for (const std::filesystem::path& file : file_to_delete)
+            std::filesystem::remove(file);
+    }
+
+    if (!output_file.empty())
+        std::filesystem::copy_file(out_file, output_file.getValue(), std::filesystem::copy_options::overwrite_existing);
+
+    return 0;
 }

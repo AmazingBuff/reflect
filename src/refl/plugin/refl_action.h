@@ -15,7 +15,8 @@ namespace Amazing::Reflect
     {
     public:
         bool VisitCXXRecordDecl(clang::CXXRecordDecl* RecordDecl);
-        [[nodiscard]] std::string GetMetaInfo() const { return m_meta_infos; }
+        bool VisitEnumDecl(clang::EnumDecl* EnumDecl);
+        [[nodiscard]] std::string GetMetaInfo() const;
     private:
         std::string m_meta_infos;
     };

@@ -17,7 +17,7 @@ namespace Amazing::Reflect
         class NullType
         {
         public:
-            [[nodiscard]] static const char* name() {return Null_Type_Name;}
+            [[nodiscard]] static const char* type_name() {return Null_Type_Name;}
         };
 
         class NullFunction : public NullType
@@ -52,6 +52,14 @@ namespace Amazing::Reflect
 
             [[nodiscard]] static uint32_t static_method_count() {return 0;}
             [[nodiscard]] static NullMethod* static_method(uint32_t index) {return nullptr;}
+        };
+
+        class NullEnum : public NullType
+        {
+        public:
+            [[nodiscard]] static uint32_t enum_count() {return 0;}
+            [[nodiscard]] static Any enum_value(uint32_t index) {return {};}
+            [[nodiscard]] static const char* enum_name(uint32_t index) {return Null_Type_Name;}
         };
     }
 }

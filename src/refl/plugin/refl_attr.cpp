@@ -15,9 +15,9 @@ namespace Amazing::Reflect
 
     bool ReflAttrInfo::diagAppertainsToDecl(clang::Sema& S, const clang::ParsedAttr& Attr, const clang::Decl* D) const
     {
-        if (!isa<clang::CXXRecordDecl>(D))
+        if (!isa<clang::CXXRecordDecl>(D) && !isa<clang::EnumDecl>(D))
         {
-            S.Diag(Attr.getLoc(), clang::diag::warn_attribute_wrong_decl_type) << Attr << Attr.isRegularKeywordAttribute() << clang::ExpectedClass;
+            S.Diag(Attr.getLoc(), clang::diag::warn_attribute_wrong_decl_type) << Attr << Attr.isRegularKeywordAttribute() << clang::ExpectedFunctionOrClassOrEnum;
             return false;
         }
         return true;

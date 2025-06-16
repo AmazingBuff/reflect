@@ -8,11 +8,10 @@
 
 namespace Amazing::Reflect
 {
-    static std::string recordMetaInfo(clang::CXXRecordDecl* RecordDecl)
+    static std::string RecordMetaInfo(clang::CXXRecordDecl* RecordDecl)
     {
         clang::PrintingPolicy policy(RecordDecl->getASTContext().getPrintingPolicy());
         policy.Bool = true;
-
 
         std::string qualified_class_name = RecordDecl->getQualifiedNameAsString();
 
@@ -35,10 +34,59 @@ namespace Amazing::Reflect
         field_type += R"(default: return {Null_Type_Name, Null_Type_Name}; } })";
         field += R"(default: return obj; } })";
 
-        std::string field_method = std::format(R"([[nodiscard]] static uint32_t field_count() {{ return {}; }} {} {})", field_count, field_type, field);
+        std::string field_method = std::format(R"(
+            [[nodiscard]] static uint32_t field_count() {{ return {}; }}
+            {}
+            {})",
+            field_count, field_type, field);
 
+        std::string meta_info = std::format(R"(
+            class MetaInfo<{}> {{
+            public:
+            [[nodiscard]] static const char* type_name() {{ return "{}"; }}
+            {} }};)",
+            qualified_class_name, qualified_class_name, field_method);
+        return meta_info;
+    }
 
-        std::string meta_info = std::format(R"(class MetaInfo<{}> {{public: {} }};)", qualified_class_name, field_method);
+    static std::string EnumMetaInfo(clang::EnumDecl* EnumDecl)
+    {
+        clang::PrintingPolicy policy(EnumDecl->getASTContext().getPrintingPolicy());
+        policy.Bool = true;
+
+        std::string qualified_class_name = EnumDecl->getQualifiedNameAsString();
+
+        std::string underlying_type = EnumDecl->getIntegerType().getAsString(policy);
+        std::string enum_name(R"([[nodiscard]] static const char* enum_name(uint32_t index) { switch (index) {)");
+        std::string enum_value = std::format(R"([[nodiscard]] static {} enum_value(uint32_t index) {{ switch (index) {{)", underlying_type);
+
+        uint32_t enum_index = 0;
+        for (auto enum_iter = EnumDecl->enumerator_begin(); enum_iter != EnumDecl->enumerator_end(); ++enum_iter)
+        {
+            if (llvm::APInt value = enum_iter->getValue(); value.isNegative())
+                enum_value += std::format(R"(case {}: return {};)", enum_index, value.getSExtValue());
+            else
+                enum_value += std::format(R"(case {}: return {};)", enum_index, value.getLimitedValue());
+
+            enum_name += std::format(R"(case {}: return "{}";)", enum_index, enum_iter->getNameAsString());
+            enum_index++;
+        }
+
+        enum_name += R"(default: return Null_Type_Name; } })";
+        enum_value += R"(default: return 0; } })";
+
+        std::string enum_method = std::format(R"(
+            [[nodiscard]] static uint32_t enum_count() {{ return {}; }}
+            {}
+            {})",
+            enum_index, enum_name, enum_value);
+
+        std::string meta_info = std::format(R"(
+            class MetaInfo<{}> {{
+            public:
+            [[nodiscard]] static const char* type_name() {{ return "{}"; }}
+            {} }};)",
+            qualified_class_name, qualified_class_name, enum_method);
         return meta_info;
     }
 
@@ -66,6 +114,7 @@ namespace Amazing::Reflect
             return;
 
         std::filesystem::path source(m_source_file);
+        //std::hash<std::filesystem::path>()(source);
         source = source.filename();
         std::filesystem::path output_directory(m_output_directory);
         source.replace_extension(".meta");
@@ -76,6 +125,7 @@ namespace Amazing::Reflect
         std::ofstream out(output_directory / source);
         if (out)
             out << m_visitor.GetMetaInfo();
+        out.close();
     }
 
     ReflAttributeFactory::ReflAttributeFactory(llvm::StringRef output_directory) : m_output_directory(output_directory) {}
@@ -93,9 +143,28 @@ namespace Amazing::Reflect
             {
                 clang::AnnotateAttr* attr = clang::dyn_cast<clang::AnnotateAttr>(*iter);
                 if (attr->getAnnotation() == "refl")
-                   m_meta_infos += recordMetaInfo(RecordDecl);
+                   m_meta_infos += RecordMetaInfo(RecordDecl);
             }
         }
         return true;
+    }
+
+    bool ReflAttributeVisitor::VisitEnumDecl(clang::EnumDecl* EnumDecl)
+    {
+        for (auto iter = EnumDecl->attr_begin(); iter != EnumDecl->attr_end(); ++iter)
+        {
+            if (clang::isa<clang::AnnotateAttr>(*iter))
+            {
+                clang::AnnotateAttr* attr = clang::dyn_cast<clang::AnnotateAttr>(*iter);
+                if (attr->getAnnotation() == "refl")
+                    m_meta_infos += EnumMetaInfo(EnumDecl);
+            }
+        }
+        return true;
+    }
+
+    std::string ReflAttributeVisitor::GetMetaInfo() const
+    {
+        return m_meta_infos;
     }
 }
