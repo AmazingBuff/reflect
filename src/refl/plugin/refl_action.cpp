@@ -90,15 +90,21 @@ namespace Amazing::Reflect
         return meta_info;
     }
 
-    ReflAttributeAction::ReflAttributeAction(const llvm::StringRef output_directory) : m_output_directory(output_directory) {}
+    ReflAttributeAction::ReflAttributeAction(const std::vector<std::string>& input_directories, const std::string& output_directory)
+        : m_input_directories(input_directories), m_output_directory(output_directory) {}
 
     std::unique_ptr<clang::ASTConsumer> ReflAttributeAction::CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile)
     {
-        return std::make_unique<ReflAttributeConsumer>(InFile, m_output_directory);
+        return std::make_unique<ReflAttributeConsumer>(InFile, m_input_directories, m_output_directory);
     }
 
-    ReflAttributeConsumer::ReflAttributeConsumer(const llvm::StringRef in_file, const llvm::StringRef output_directory)
-        : m_source_file(in_file), m_output_directory(output_directory) {}
+    ReflAttributeConsumer::ReflAttributeConsumer(const llvm::StringRef in_file, const std::vector<std::string>& input_directories, const std::string& output_directory)
+        : m_source_file(in_file), m_output_directory(output_directory)
+    {
+        m_input_directories.reserve(input_directories.size());
+        for (uint32_t i = 0; i < input_directories.size(); i++)
+            m_input_directories[i] = input_directories[i];
+    }
 
     void ReflAttributeConsumer::HandleTranslationUnit(clang::ASTContext& Context)
     {
@@ -114,8 +120,18 @@ namespace Amazing::Reflect
             return;
 
         std::filesystem::path source(m_source_file);
-        //std::hash<std::filesystem::path>()(source);
         source = source.filename();
+
+        for (const std::string& input_directory : m_input_directories)
+        {
+            if (m_source_file.find(input_directory) != std::string::npos)
+            {
+                std::string relative_path = m_source_file.substr(input_directory.length());
+                source = relative_path;
+                break;
+            }
+        }
+
         std::filesystem::path output_directory(m_output_directory);
         source.replace_extension(".meta");
 
@@ -128,11 +144,12 @@ namespace Amazing::Reflect
         out.close();
     }
 
-    ReflAttributeFactory::ReflAttributeFactory(llvm::StringRef output_directory) : m_output_directory(output_directory) {}
+    ReflAttributeFactory::ReflAttributeFactory(const std::vector<std::string>& input_directories, const std::string& output_directory)
+        : m_input_directories(input_directories), m_output_directory(output_directory) {}
 
     std::unique_ptr<clang::FrontendAction> ReflAttributeFactory::create()
     {
-        return std::make_unique<ReflAttributeAction>(m_output_directory);
+        return std::make_unique<ReflAttributeAction>(m_input_directories, m_output_directory);
     }
 
     bool ReflAttributeVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl* RecordDecl)

@@ -35,6 +35,12 @@ int main(int argc, const char* argv[])
         llvm::cl::value_desc("directory"),
         llvm::cl::desc("output directory"),
         llvm::cl::cat(reflect_category));
+    static llvm::cl::list<std::string> include_directories(
+        "include",
+        llvm::cl::ZeroOrMore,
+        llvm::cl::value_desc("directory"),
+        llvm::cl::desc("include directories"),
+        llvm::cl::cat(reflect_category));
 
     llvm::cl::HideUnrelatedOptions(reflect_category);
     llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -87,19 +93,36 @@ int main(int argc, const char* argv[])
         }
     }
 
-    std::unique_ptr<clang::tooling::FixedCompilationDatabase> compilations = std::make_unique<clang::tooling::FixedCompilationDatabase>(".", std::vector<std::string>());
+    std::vector<std::string> compile_commands;
+    for (const std::string& dir : include_directories)
+        compile_commands.push_back("-I" + dir);
+
+    compile_commands.push_back("-xc++");
+    compile_commands.push_back("-std=c++23");
+
+    std::unique_ptr<clang::tooling::FixedCompilationDatabase> compilations =
+        std::make_unique<clang::tooling::FixedCompilationDatabase>(".", compile_commands);
+
+    std::vector<std::string> in_directories(input_directories.size());
+    for (uint32_t i = 0; i < input_directories.size(); i++)
+        in_directories[i] = input_directories[i];
+
+    std::filesystem::path out_directory = output_directory.getValue();
+    std::filesystem::path merge_directory = out_directory / "reflect";
+
     clang::tooling::ClangTool tool(*compilations, files);
-    tool.run(std::make_unique<Amazing::Reflect::ReflAttributeFactory>(output_directory).get());
+    tool.run(std::make_unique<Amazing::Reflect::ReflAttributeFactory>(in_directories, merge_directory.generic_string()).get());
 
     // merge
-    std::filesystem::path out_directory = output_directory.getValue();
-    std::filesystem::path out_file = out_directory / "refl.meta";
-    if (!files.empty() && std::filesystem::exists(out_directory))
+    std::filesystem::path out_dir = out_directory / "refl";
+    std::filesystem::path out_file = out_dir / "refl.meta";
+    if (!files.empty() && std::filesystem::exists(merge_directory))
     {
-        std::ofstream out(out_file, std::ios::app);
-        std::vector<std::filesystem::path> file_to_delete(file_count);
-        uint32_t delete_file_index = 0;
-        for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(out_directory))
+        if (!std::filesystem::exists(out_dir))
+            std::filesystem::create_directories(out_dir);
+
+        std::ofstream out(out_file, std::ios::ate);
+        for (const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator(merge_directory))
         {
             if (entry.is_regular_file() && entry.path().extension() == ".meta")
             {
@@ -111,15 +134,11 @@ int main(int argc, const char* argv[])
                         out << meta_info;
                 }
                 in.close();
-
-                file_to_delete[delete_file_index] = entry.path();
-                delete_file_index++;
             }
         }
         out.close();
 
-        for (const std::filesystem::path& file : file_to_delete)
-            std::filesystem::remove(file);
+        std::filesystem::remove_all(merge_directory);
     }
 
     if (!output_file.empty())

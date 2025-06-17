@@ -24,7 +24,7 @@ namespace Amazing::Reflect
     class ReflAttributeConsumer final : public clang::ASTConsumer
     {
     public:
-        ReflAttributeConsumer(llvm::StringRef in_file, llvm::StringRef output_directory);
+        ReflAttributeConsumer(llvm::StringRef in_file, const std::vector<std::string>& input_directories, const std::string& output_directory);
         void HandleTranslationUnit(clang::ASTContext& Context) override;
     private:
         void WriteMetaInfoToFile() const;
@@ -32,24 +32,27 @@ namespace Amazing::Reflect
         ReflAttributeVisitor m_visitor;
         std::string m_source_file;
         std::string m_output_directory;
+        std::vector<std::string> m_input_directories;
     };
 
     class ReflAttributeAction final : public clang::ASTFrontendAction
     {
     public:
-        explicit ReflAttributeAction(llvm::StringRef output_directory);
+        ReflAttributeAction(const std::vector<std::string>& input_directories, const std::string& output_directory);
         std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance& Compiler, llvm::StringRef InFile) override;
     private:
-        llvm::StringRef m_output_directory;
+        std::vector<std::string> m_input_directories;
+        std::string m_output_directory;
     };
 
     class ReflAttributeFactory final : public clang::tooling::FrontendActionFactory
     {
     public:
-        explicit ReflAttributeFactory(llvm::StringRef output_directory);
+        ReflAttributeFactory(const std::vector<std::string>& input_directories, const std::string& output_directory);
         std::unique_ptr<clang::FrontendAction> create() override;
     private:
-        llvm::StringRef m_output_directory;
+        std::vector<std::string> m_input_directories;
+        std::string m_output_directory;
     };
 
 
