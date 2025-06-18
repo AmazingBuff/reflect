@@ -55,8 +55,8 @@ target_include_directories(
 		${CLANG_INCLUDE_DIRS}
 )
 
-set(REFLECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE STRING "")
-set(REFLECT_EXECUTABLE ${PROJECT_NAME}_exec CACHE STRING "")
+set(REFLECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated CACHE STRING "")
+set(REFLECT_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_exec${CMAKE_EXECUTABLE_SUFFIX} CACHE STRING "")
 
 function(All_INCLUDE_DIRS target target_includes)
 	set(target_include_text "${CMAKE_BINARY_DIR}/${target}_include_dirs.txt")
@@ -103,9 +103,8 @@ function(EXECUTE_REFLECT)
 			list(APPEND COMMAND_ARGS "-include" ${include_path})
 		endforeach ()
 
-		add_custom_target(reflect_${target}
+		execute_process(
 			COMMAND ${REFLECT_EXECUTABLE} ${COMMAND_ARGS} -O ${REFLECT_OUTPUT_DIR}
-			DEPENDS ${REFLECT_EXECUTABLE}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		)
 
