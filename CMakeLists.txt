@@ -114,7 +114,7 @@ function(EXECUTE_REFLECT)
 
 		get_target_property(definitions ${target} COMPILE_DEFINITIONS)
 		foreach (definition ${definitions})
-			list(APPEND COMMAND_ARGS "-D" ${pch_path})
+			list(APPEND COMMAND_ARGS "-D" ${definition})
 		endforeach ()
 
 		add_custom_target(reflect_${target}
