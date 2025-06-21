@@ -41,6 +41,18 @@ int main(int argc, const char* argv[])
         llvm::cl::value_desc("directory"),
         llvm::cl::desc("include directories"),
         llvm::cl::cat(reflect_category));
+    static llvm::cl::list<std::string> pch_files(
+        "pch",
+        llvm::cl::ZeroOrMore,
+        llvm::cl::value_desc("filename"),
+        llvm::cl::desc("pch file"),
+        llvm::cl::cat(reflect_category));
+    static llvm::cl::list<std::string> definitions(
+        "D",
+        llvm::cl::ZeroOrMore,
+        llvm::cl::value_desc("definition"),
+        llvm::cl::desc("user definition"),
+        llvm::cl::cat(reflect_category));
 
     llvm::cl::HideUnrelatedOptions(reflect_category);
     llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -96,9 +108,13 @@ int main(int argc, const char* argv[])
     std::vector<std::string> compile_commands;
     for (const std::string& dir : include_directories)
         compile_commands.push_back("-I" + dir);
+    for (const std::string& pch_file : pch_files)
+        compile_commands.push_back("-include" + pch_file);
+    for (const std::string& def : definitions)
+        compile_commands.push_back("-D" + def);
 
-    compile_commands.push_back("-xc++");
-    compile_commands.push_back("-std=c++23");
+    compile_commands.emplace_back("-xc++");
+    compile_commands.emplace_back("-std=c++latest");
 
     std::unique_ptr<clang::tooling::FixedCompilationDatabase> compilations =
         std::make_unique<clang::tooling::FixedCompilationDatabase>(".", compile_commands);

@@ -1,35 +1,35 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(
-		reflect
-		LANGUAGES CXX
-		DESCRIPTION "A simple reflection library for C++"
+	reflect
+	LANGUAGES CXX
+	DESCRIPTION "A simple reflection library for C++"
 )
 
 add_library(
-		${PROJECT_NAME}
-		INTERFACE
+	${PROJECT_NAME}
+	INTERFACE
 )
 
 target_compile_features(
-		${PROJECT_NAME}
-		INTERFACE
-		cxx_std_23
+	${PROJECT_NAME}
+	INTERFACE
+	cxx_std_23
 )
 
 target_compile_options(
-		${PROJECT_NAME}
-		INTERFACE
-		$<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
-		$<$<CXX_COMPILER_ID:GNU>:-Wextra -Wall -pedantic>
-		$<$<CXX_COMPILER_ID:Clang>:-Wc++23-extensions>
+	${PROJECT_NAME}
+	INTERFACE
+	$<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
+	$<$<CXX_COMPILER_ID:GNU>:-Wextra -Wall -pedantic>
+	$<$<CXX_COMPILER_ID:Clang>:-Wc++23-extensions>
 )
 
 target_include_directories(
-		${PROJECT_NAME}
-		INTERFACE
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include>
+	${PROJECT_NAME}
+	INTERFACE
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include>
 )
 
 
@@ -37,32 +37,35 @@ file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 find_package(Clang)
 
 add_executable(
-		${PROJECT_NAME}_exec
-		${SOURCE_FILES}
+	${PROJECT_NAME}_exec
+	${SOURCE_FILES}
 )
 
 target_link_libraries(
-		${PROJECT_NAME}_exec
-		PRIVATE
-		clangFrontend
-		clangTooling
-		${PROJECT_NAME}
+	${PROJECT_NAME}_exec
+	PRIVATE
+	clangFrontend
+	clangTooling
+	${PROJECT_NAME}
 )
 
 target_include_directories(
-		${PROJECT_NAME}_exec
-		PRIVATE
-		${CLANG_INCLUDE_DIRS}
+	${PROJECT_NAME}_exec
+	PRIVATE
+	${CLANG_INCLUDE_DIRS}
 )
 
 set(REFLECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated CACHE STRING "")
 set(REFLECT_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_exec${CMAKE_EXECUTABLE_SUFFIX} CACHE STRING "")
 
 function(All_INCLUDE_DIRS target target_includes)
+	get_target_property(real_target ${target} ALIASED_TARGET)
+	if (real_target)
+		set(target ${real_target})
+	endif ()
 	set(target_include_text "${CMAKE_BINARY_DIR}/${target}_include_dirs.txt")
-	file(GENERATE
-			OUTPUT ${target_include_text}
-			CONTENT "$<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>\n$<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>")
+	file(GENERATE OUTPUT ${target_include_text}
+		CONTENT "$<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>\n$<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>")
 
 	if(EXISTS ${target_include_text})
 		file(STRINGS ${target_include_text} evaluated_dirs)
@@ -103,8 +106,20 @@ function(EXECUTE_REFLECT)
 			list(APPEND COMMAND_ARGS "-include" ${include_path})
 		endforeach ()
 
-		execute_process(
+		get_target_property(pch_files ${target} PRECOMPILE_HEADERS)
+		foreach (pch_file ${pch_files})
+			get_filename_component(pch_path ${pch_file} ABSOLUTE)
+			list(APPEND COMMAND_ARGS "-pch" ${pch_path})
+		endforeach ()
+
+		get_target_property(definitions ${target} COMPILE_DEFINITIONS)
+		foreach (definition ${definitions})
+			list(APPEND COMMAND_ARGS "-D" ${pch_path})
+		endforeach ()
+
+		add_custom_target(reflect_${target}
 			COMMAND ${REFLECT_EXECUTABLE} ${COMMAND_ARGS} -O ${REFLECT_OUTPUT_DIR}
+			DEPENDS ${REFLECT_EXECUTABLE}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 		)
 
