@@ -114,7 +114,7 @@ int main(int argc, const char* argv[])
         compile_commands.push_back("-D" + def);
 
     compile_commands.emplace_back("-xc++");
-    compile_commands.emplace_back("-std=c++latest");
+    compile_commands.emplace_back("-std=c++2c");
 
     std::unique_ptr<clang::tooling::FixedCompilationDatabase> compilations =
         std::make_unique<clang::tooling::FixedCompilationDatabase>(".", compile_commands);

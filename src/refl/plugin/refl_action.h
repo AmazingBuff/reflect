@@ -14,17 +14,19 @@ namespace Amazing::Reflect
     class ReflAttributeVisitor final : public clang::RecursiveASTVisitor<ReflAttributeVisitor>
     {
     public:
+        explicit ReflAttributeVisitor(clang::ASTContext& ctx);
         bool VisitCXXRecordDecl(clang::CXXRecordDecl* RecordDecl);
         bool VisitEnumDecl(clang::EnumDecl* EnumDecl);
         [[nodiscard]] std::string GetMetaInfo() const;
     private:
+        clang::ASTContext& m_context;
         std::string m_meta_infos;
     };
 
     class ReflAttributeConsumer final : public clang::ASTConsumer
     {
     public:
-        ReflAttributeConsumer(llvm::StringRef in_file, const std::vector<std::string>& input_directories, const std::string& output_directory);
+        ReflAttributeConsumer(clang::ASTContext& ctx, llvm::StringRef in_file, const std::vector<std::string>& input_directories, const std::string& output_directory);
         void HandleTranslationUnit(clang::ASTContext& Context) override;
     private:
         void WriteMetaInfoToFile() const;
