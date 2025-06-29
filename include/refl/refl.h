@@ -15,6 +15,9 @@ namespace Amazing::Reflect
         concept is_class = std::is_class_v<T>;
 
         template <typename T>
+        concept is_enum = std::is_enum_v<T>;
+
+        template <typename T>
         concept is_method = std::is_member_function_pointer_v<T>;
 
         template <typename T>
@@ -48,6 +51,12 @@ namespace Amazing::Reflect
         struct Select<T>
         {
             using type = NullType;
+        };
+
+        template <is_enum T>
+        struct Select<T>
+        {
+            using type = NullEnum<T>;
         };
 
         template <typename T>

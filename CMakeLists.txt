@@ -11,20 +11,6 @@ add_library(
 	INTERFACE
 )
 
-target_compile_features(
-	${PROJECT_NAME}
-	INTERFACE
-	cxx_std_23
-)
-
-target_compile_options(
-	${PROJECT_NAME}
-	INTERFACE
-	$<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
-	$<$<CXX_COMPILER_ID:GNU>:-Wextra -Wall -pedantic>
-	$<$<CXX_COMPILER_ID:Clang>:-Wc++23-extensions>
-)
-
 target_include_directories(
 	${PROJECT_NAME}
 	INTERFACE
@@ -38,6 +24,11 @@ find_package(Clang)
 
 add_executable(
 	${PROJECT_NAME}_exec
+)
+
+target_sources(
+	${PROJECT_NAME}_exec
+	PRIVATE
 	${SOURCE_FILES}
 )
 
@@ -55,6 +46,13 @@ target_include_directories(
 	${CLANG_INCLUDE_DIRS}
 )
 
+target_compile_features(
+	${PROJECT_NAME}_exec
+	PRIVATE
+	cxx_std_23
+)
+
+
 set(REFLECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated CACHE STRING "")
 set(REFLECT_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_exec${CMAKE_EXECUTABLE_SUFFIX} CACHE STRING "")
 
@@ -63,7 +61,7 @@ function(All_INCLUDE_DIRS target target_includes)
 	if (real_target)
 		set(target ${real_target})
 	endif ()
-	set(target_include_text "${CMAKE_BINARY_DIR}/${target}_include_dirs.txt")
+	set(target_include_text ${CMAKE_CURRENT_BINARY_DIR}/${target}_include_dirs.txt)
 	file(GENERATE OUTPUT ${target_include_text}
 		CONTENT "$<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>\n$<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>")
 
@@ -114,8 +112,10 @@ function(EXECUTE_REFLECT)
 
 		get_target_property(definitions ${target} COMPILE_DEFINITIONS)
 		foreach (definition ${definitions})
-			list(APPEND COMMAND_ARGS "-D" ${pch_path})
+			list(APPEND COMMAND_ARGS "-D" ${definition})
 		endforeach ()
+		# this command only valid for generating reflect information
+		list(APPEND COMMAND_ARGS "-D" "REFLECT=[[refl]]")
 
 		add_custom_target(reflect_${target}
 			COMMAND ${REFLECT_EXECUTABLE} ${COMMAND_ARGS} -O ${REFLECT_OUTPUT_DIR}
@@ -133,6 +133,7 @@ function(EXECUTE_REFLECT)
 			${target}
 			PUBLIC
 			REFL_META
+			REFLECT=	# for no value definition
 		)
 	endforeach()
 endfunction()

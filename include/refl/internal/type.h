@@ -23,16 +23,16 @@ namespace Amazing::Reflect
         class NullFunction : public NullType
         {
         public:
-            [[nodiscard]] static uint32_t parameter_count() {return 0;}
-            [[nodiscard]] static Parameter return_type() {return {Null_Type_Name, Null_Type_Name};}
+            [[nodiscard]] static constexpr uint32_t parameter_count() {return 0;}
+            [[nodiscard]] static const char* return_type() {return Null_Type_Name;}
             [[nodiscard]] static Parameter parameter_type(uint32_t index) {return {Null_Type_Name, Null_Type_Name};}
         };
 
         class NullMethod : public NullType
         {
         public:
-            [[nodiscard]] static uint32_t parameter_count() {return 0;}
-            [[nodiscard]] static Parameter return_type() {return {Null_Type_Name, Null_Type_Name};}
+            [[nodiscard]] static constexpr uint32_t parameter_count() {return 0;}
+            [[nodiscard]] static const char* return_type() {return Null_Type_Name;}
             [[nodiscard]] static Parameter parameter_type(uint32_t index) {return {Null_Type_Name, Null_Type_Name};}
         };
 
@@ -54,12 +54,14 @@ namespace Amazing::Reflect
             [[nodiscard]] static NullMethod* static_method(uint32_t index) {return nullptr;}
         };
 
+        template <typename T>
         class NullEnum : public NullType
         {
         public:
-            [[nodiscard]] static uint32_t enum_count() {return 0;}
-            [[nodiscard]] static Any enum_value(uint32_t index) {return {};}
+            [[nodiscard]] static constexpr uint32_t enum_count() {return 0;}
+            [[nodiscard]] static constexpr std::underlying_type_t<T> enum_value(uint32_t index) { return {}; }
             [[nodiscard]] static const char* enum_name(uint32_t index) {return Null_Type_Name;}
+            [[nodiscard]] static constexpr T enum_field(uint32_t index) { return {}; }
         };
     }
 }
