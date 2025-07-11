@@ -62,8 +62,11 @@ function(All_INCLUDE_DIRS target target_includes)
 		set(target ${real_target})
 	endif ()
 	set(target_include_text ${CMAKE_CURRENT_BINARY_DIR}/${target}_include_dirs.txt)
-	file(GENERATE OUTPUT ${target_include_text}
-		CONTENT "$<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>\n$<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>")
+
+	if(NOT EXISTS ${target_include_text})
+		file(GENERATE OUTPUT ${target_include_text}
+			 CONTENT "$<TARGET_PROPERTY:${target},INCLUDE_DIRECTORIES>\n$<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>")
+	endif()
 
 	if(EXISTS ${target_include_text})
 		file(STRINGS ${target_include_text} evaluated_dirs)
